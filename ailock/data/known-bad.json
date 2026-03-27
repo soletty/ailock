@@ -1,0 +1,122 @@
+{
+  "schema_version": "1",
+  "description": "Community-maintained database of known-bad AI/LLM Python package versions. Submit PRs at https://github.com/midnightrun-ai/ailock",
+  "last_updated": "2025-03-27",
+  "entries": [
+    {
+      "package": "litellm",
+      "version": "1.82.7",
+      "hashes": [],
+      "severity": "CRITICAL",
+      "cve": null,
+      "description": "Malicious code injected post-release. This version was replaced on PyPI after the initial clean release. The replacement contained code to exfiltrate environment variables and API keys to an external server. Any installation of this version should be treated as potentially compromised.",
+      "attack_type": "post-release_replacement",
+      "reported_at": "2024-11",
+      "indicators": [
+        "Outbound network calls to unexpected endpoints",
+        "Environment variable access in setup/install hooks",
+        "SHA256 hash mismatch vs. originally-published version"
+      ],
+      "references": [
+        "https://github.com/BerriAI/litellm/issues",
+        "https://socket.dev/npm/package/litellm",
+        "https://www.reversinglabs.com/blog/litellm-supply-chain-attack"
+      ],
+      "remediation": "Upgrade to litellm >= 1.83.0 (verified clean). Rotate any API keys that may have been exposed. Check for unauthorized access in your LLM provider dashboards.",
+      "note": "Version-based detection: any lockfile containing litellm==1.82.7 will be flagged. Use 'ailock verify' to additionally detect hash changes in your specific environment."
+    },
+    {
+      "package": "litellm",
+      "version": "1.82.8",
+      "hashes": [],
+      "severity": "CRITICAL",
+      "cve": null,
+      "description": "Follow-on compromised release. Released shortly after 1.82.7 was flagged, also containing malicious credential-exfiltration code. Represents an attacker retaining persistent PyPI access after initial compromise.",
+      "attack_type": "post-release_replacement",
+      "reported_at": "2024-11",
+      "indicators": [
+        "Suspicious HTTP requests during import",
+        "Hash mismatch on ailock verify",
+        "Installation of unexpected transitive dependencies"
+      ],
+      "references": [
+        "https://github.com/BerriAI/litellm/issues",
+        "https://socket.dev/npm/package/litellm",
+        "https://www.reversinglabs.com/blog/litellm-supply-chain-attack"
+      ],
+      "remediation": "Upgrade to litellm >= 1.83.0 (verified clean). Rotate all API keys (OpenAI, Anthropic, Cohere, etc.). Audit deployment logs for exfiltration traffic.",
+      "note": "Version-based detection: any lockfile containing litellm==1.82.8 will be flagged. Use 'ailock verify' to additionally detect hash changes in your specific environment."
+    },
+    {
+      "package": "ultralytics",
+      "version": "8.3.41",
+      "hashes": [],
+      "severity": "HIGH",
+      "cve": null,
+      "description": "Malicious code injected via compromised CI/CD pipeline (GitHub Actions). The attacker gained access to the ultralytics PyPI publishing workflow and injected a cryptominer. Affected the popular computer vision / YOLO library.",
+      "attack_type": "ci_cd_compromise",
+      "reported_at": "2024-12",
+      "indicators": [
+        "Unexpected CPU usage after install",
+        "Background processes spawned during import",
+        "Outbound connections to mining pool endpoints"
+      ],
+      "references": [
+        "https://github.com/ultralytics/ultralytics/issues/18027",
+        "https://socket.dev/blog/ultralytics-supply-chain-attack"
+      ],
+      "remediation": "Upgrade to ultralytics >= 8.3.43 (patched). Check for cryptominer processes. Review any models or data processed with the affected version.",
+      "note": "Included as a real-world example of CI/CD compromise vs. direct PyPI tampering."
+    },
+    {
+      "package": "openai-gptx",
+      "version": "0.0.1",
+      "hashes": [],
+      "severity": "HIGH",
+      "cve": null,
+      "description": "Typosquat targeting 'openai'. Package name designed to trick developers who mistype the openai package name. Harvests API keys passed to the fake SDK.",
+      "attack_type": "typosquat",
+      "reported_at": "2024-01",
+      "indicators": [
+        "Package accepts API keys but returns errors",
+        "Not a known OpenAI official package"
+      ],
+      "references": [
+        "https://pypi.org/project/openai-gptx/"
+      ],
+      "remediation": "The official OpenAI package is 'openai'. Always verify package names."
+    },
+    {
+      "package": "langchian",
+      "version": null,
+      "hashes": [],
+      "severity": "HIGH",
+      "cve": null,
+      "description": "Typosquat targeting 'langchain'. Common misspelling. Any version of this package should be treated as malicious.",
+      "attack_type": "typosquat",
+      "reported_at": "2024-03",
+      "indicators": [
+        "Not an official LangChain package",
+        "Minimal legitimate functionality"
+      ],
+      "references": [],
+      "remediation": "The official LangChain package is 'langchain'. Remove immediately."
+    },
+    {
+      "package": "transformers-agent",
+      "version": null,
+      "hashes": [],
+      "severity": "MEDIUM",
+      "cve": null,
+      "description": "Malicious package targeting developers looking for HuggingFace transformers agents functionality. Not affiliated with HuggingFace. Exfiltrates Hugging Face tokens.",
+      "attack_type": "confusable_name",
+      "reported_at": "2024-06",
+      "indicators": [
+        "Not published by HuggingFace",
+        "Minimal code with credential access patterns"
+      ],
+      "references": [],
+      "remediation": "HuggingFace Transformers agents are part of the official 'transformers' package."
+    }
+  ]
+}

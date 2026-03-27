@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ailock — Cryptographic Lockfile for AI/LLM Dependencies</title>
+<meta name="description" content="ailock — cryptographic lockfile for AI/LLM Python dependencies. Catches supply chain attacks on litellm, langchain, openai, transformers before they hit prod. Like package-lock.json, but for AI. PyPI launch coming soon.">
+<meta property="og:title" content="ailock — The Supply Chain Attack That Could Have Been Stopped">
+<meta property="og:description" content="LiteLLM v1.82.7 was replaced on PyPI after release. The hash changed. Nobody checked. ailock verify would have caught it. pip install ailock">
+<meta property="og:url" content="https://midnightrun.ai/ailock/">
+<meta property="og:image" content="https://midnightrun.ai/ailock/og-image.svg">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@midnightrun_ai">
+<meta name="twitter:title" content="ailock — Catch AI supply chain attacks in CI">
+<meta name="twitter:description" content="LiteLLM 1.82.7 was backdoored. ailock verify would have caught the hash change before it hit prod. Open source, pip install ailock.">
+<meta name="twitter:image" content="https://midnightrun.ai/ailock/og-image.svg">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔐</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #04060d;
+    --surface: #080d1a;
+    --surface-2: #0c1224;
+    --surface-3: #101930;
+    --border: #162038;
+    --border-bright: #1e2e50;
+    --red: #ff2d55;
+    --red-glow: rgba(255,45,85,0.2);
+    --red-dim: rgba(255,45,85,0.08);
+    --orange: #ff6b35;
+    --green: #00e5a0;
+    --green-dim: rgba(0,229,160,0.08);
+    --green-glow: rgba(0,229,160,0.15);
+    --blue: #4db8ff;
+    --blue-dim: rgba(77,184,255,0.08);
+    --purple: #8b5cf6;
+    --cyan: #00d4ff;
+    --cyan-dim: rgba(0,212,255,0.08);
+    --yellow: #f4b942;
+    --text: #dde6f5;
+    --text-2: #7a90b8;
+    --text-3: #3d4f70;
+    --font-display: 'Chakra Petch', monospace;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-display);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* Grid noise texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(77,184,255,0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(77,184,255,0.015) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2rem;
+    height: 60px;
+    background: rgba(4,6,13,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    color: var(--text);
+    font-weight: 700;
+    font-size: 1.1rem;
+    letter-spacing: 0.05em;
+  }
+
+  .nav-brand .lock-icon { color: var(--cyan); }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    color: var(--text-2);
+    text-decoration: none;
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--cyan); }
+
+  .nav-github {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 1rem;
+    border: 1px solid var(--border-bright);
+    border-radius: 6px;
+    color: var(--text) !important;
+    font-size: 0.82rem !important;
+    transition: border-color 0.2s, background 0.2s !important;
+  }
+  .nav-github:hover {
+    border-color: var(--cyan) !important;
+    background: var(--cyan-dim);
+    color: var(--cyan) !important;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 100px 2rem 4rem;
+    overflow: hidden;
+  }
+
+  /* Dramatic background glow */
+  .hero::after {
+    content: '';
+    position: absolute;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 800px;
+    height: 400px;
+    background: radial-gradient(ellipse, rgba(255,45,85,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--red-dim);
+    border: 1px solid rgba(255,45,85,0.3);
+    border-radius: 100px;
+    padding: 0.35rem 1rem;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--red);
+    margin-bottom: 2rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  .hero-eyebrow .dot {
+    width: 6px; height: 6px;
+    background: var(--red);
+    border-radius: 50%;
+    animation: pulse-red 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-red {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+  }
+
+  .hero h1 {
+    font-size: clamp(2.8rem, 7vw, 5.5rem);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 1.5rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  .hero h1 .line-1 { display: block; color: var(--text); }
+  .hero h1 .line-2 {
+    display: block;
+    background: linear-gradient(135deg, var(--cyan) 0%, var(--blue) 50%, var(--purple) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-sub {
+    font-size: clamp(1rem, 2vw, 1.25rem);
+    color: var(--text-2);
+    max-width: 600px;
+    margin-bottom: 2.5rem;
+    position: relative;
+    z-index: 1;
+    font-weight: 300;
+    line-height: 1.7;
+  }
+
+  .hero-install {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: var(--surface-2);
+    border: 1px solid var(--border-bright);
+    border-radius: 10px;
+    padding: 0.85rem 1.5rem;
+    font-family: var(--font-mono);
+    font-size: 1.1rem;
+    color: var(--cyan);
+    margin-bottom: 1.5rem;
+    position: relative;
+    z-index: 1;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .hero-install:hover {
+    border-color: var(--cyan);
+    box-shadow: 0 0 20px rgba(0,212,255,0.15);
+  }
+  .hero-install .prompt { color: var(--text-3); }
+  .hero-install .copy-btn {
+    margin-left: auto;
+    font-size: 0.75rem;
+    color: var(--text-3);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-display);
+    letter-spacing: 0.05em;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    transition: color 0.2s;
+  }
+  .hero-install .copy-btn:hover { color: var(--cyan); }
+  .hero-install .copy-btn.copied { color: var(--green); }
+
+  .hero-links {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1.5rem;
+    border-radius: 8px;
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    transition: all 0.2s;
+    cursor: pointer;
+    border: none;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--cyan) 0%, var(--blue) 100%);
+    color: #000;
+  }
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 25px rgba(0,212,255,0.3);
+  }
+
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border-bright);
+    color: var(--text-2);
+  }
+  .btn-ghost:hover {
+    border-color: var(--cyan);
+    color: var(--cyan);
+    background: var(--cyan-dim);
+  }
+
+  /* ── ATTACK SECTION ── */
+  .section {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 5rem 2rem;
+  }
+
+  .section-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--red);
+    margin-bottom: 0.75rem;
+  }
+
+  .section-title {
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 1.5rem;
+    letter-spacing: -0.01em;
+  }
+
+  .attack-timeline {
+    position: relative;
+    margin: 3rem 0;
+  }
+
+  .timeline-line {
+    position: absolute;
+    left: 100px;
+    top: 0; bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, var(--red), var(--surface));
+  }
+
+  .timeline-item {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 2rem;
+    align-items: flex-start;
+  }
+
+  .timeline-time {
+    width: 100px;
+    flex-shrink: 0;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-3);
+    padding-top: 0.3rem;
+    text-align: right;
+  }
+
+  .timeline-dot {
+    position: relative;
+    z-index: 1;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 0.2rem;
+    margin-left: -7px;
+  }
+  .timeline-dot.ok { background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .timeline-dot.danger { background: var(--red); box-shadow: 0 0 8px var(--red); animation: pulse-red 2s infinite; }
+  .timeline-dot.warning { background: var(--yellow); box-shadow: 0 0 8px var(--yellow); }
+
+  .timeline-content {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem;
+  }
+  .timeline-content.danger-card {
+    border-color: rgba(255,45,85,0.4);
+    background: linear-gradient(135deg, rgba(255,45,85,0.06) 0%, var(--surface) 100%);
+  }
+
+  .timeline-content h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+    color: var(--text);
+  }
+  .timeline-content p {
+    font-size: 0.9rem;
+    color: var(--text-2);
+    line-height: 1.6;
+  }
+  .timeline-content .tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+  }
+  .tag-ok { background: var(--green-dim); color: var(--green); border: 1px solid rgba(0,229,160,0.2); }
+  .tag-danger { background: var(--red-dim); color: var(--red); border: 1px solid rgba(255,45,85,0.3); }
+  .tag-caught { background: rgba(0,212,255,0.1); color: var(--cyan); border: 1px solid rgba(0,212,255,0.3); }
+
+  /* ── HOW IT WORKS ── */
+  .divider {
+    border: none;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--border), transparent);
+    margin: 0;
+  }
+
+  .steps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-top: 3rem;
+  }
+
+  .step-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.75rem;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .step-card:hover {
+    border-color: var(--cyan);
+    transform: translateY(-2px);
+  }
+
+  .step-num {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--text-3);
+    letter-spacing: 0.1em;
+    margin-bottom: 0.75rem;
+  }
+
+  .step-cmd {
+    font-family: var(--font-mono);
+    font-size: 1.1rem;
+    color: var(--cyan);
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+  }
+
+  .step-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+  }
+
+  .step-desc {
+    font-size: 0.875rem;
+    color: var(--text-2);
+    line-height: 1.6;
+    font-weight: 300;
+  }
+
+  /* ── TERMINAL ── */
+  .terminal-wrap {
+    background: #02040a;
+    border: 1px solid var(--border-bright);
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 2.5rem 0;
+    font-family: var(--font-mono);
+  }
+
+  .terminal-header {
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+    padding: 0.6rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .terminal-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+  }
+  .terminal-dot:nth-child(1) { background: #ff5f57; }
+  .terminal-dot:nth-child(2) { background: #febc2e; }
+  .terminal-dot:nth-child(3) { background: #28c840; }
+
+  .terminal-title {
+    margin-left: auto;
+    margin-right: auto;
+    font-size: 0.75rem;
+    color: var(--text-3);
+    letter-spacing: 0.05em;
+  }
+
+  .terminal-body {
+    padding: 1.5rem;
+    font-size: 0.82rem;
+    line-height: 1.7;
+    overflow-x: auto;
+  }
+
+  .t-prompt { color: var(--text-3); }
+  .t-cmd { color: var(--cyan); }
+  .t-comment { color: var(--text-3); }
+  .t-ok { color: var(--green); }
+  .t-err { color: var(--red); }
+  .t-warn { color: var(--yellow); }
+  .t-info { color: var(--text-2); }
+  .t-dim { color: var(--text-3); }
+  .t-pkg { color: var(--purple); }
+  .t-hash { color: var(--text-3); font-size: 0.78rem; }
+  .t-alert {
+    color: var(--red);
+    font-weight: bold;
+    background: rgba(255,45,85,0.08);
+    border: 1px solid rgba(255,45,85,0.2);
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    margin: 0.5rem 0;
+    display: block;
+  }
+
+  /* ── KNOWN-BAD TABLE ── */
+  .known-bad-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    margin: 3rem 0;
+  }
+
+  .known-bad-header {
+    background: linear-gradient(135deg, rgba(255,45,85,0.12) 0%, var(--surface-2) 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 1.5rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: gap;
+    gap: 1rem;
+  }
+
+  .known-bad-header h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .known-bad-header p {
+    font-size: 0.85rem;
+    color: var(--text-2);
+    margin-top: 0.25rem;
+  }
+
+  .contribute-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 1rem;
+    border: 1px solid var(--border-bright);
+    border-radius: 6px;
+    font-size: 0.8rem;
+    color: var(--text-2);
+    text-decoration: none;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .contribute-btn:hover {
+    border-color: var(--cyan);
+    color: var(--cyan);
+  }
+
+  .kb-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .kb-table th {
+    padding: 0.75rem 1.5rem;
+    text-align: left;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    border-bottom: 1px solid var(--border);
+    font-weight: 500;
+  }
+
+  .kb-table td {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid rgba(22,32,56,0.5);
+    font-size: 0.875rem;
+    vertical-align: top;
+  }
+
+  .kb-table tr:last-child td { border-bottom: none; }
+  .kb-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .severity-badge {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .severity-critical {
+    background: rgba(255,45,85,0.15);
+    color: var(--red);
+    border: 1px solid rgba(255,45,85,0.3);
+  }
+  .severity-high {
+    background: rgba(255,107,53,0.12);
+    color: var(--orange);
+    border: 1px solid rgba(255,107,53,0.25);
+  }
+  .severity-medium {
+    background: rgba(244,185,66,0.1);
+    color: var(--yellow);
+    border: 1px solid rgba(244,185,66,0.2);
+  }
+
+  .pkg-name {
+    font-family: var(--font-mono);
+    color: var(--purple);
+    font-weight: 500;
+  }
+  .pkg-version {
+    font-family: var(--font-mono);
+    color: var(--text-2);
+    font-size: 0.82rem;
+  }
+
+  /* ── GITHUB ACTIONS ── */
+  .actions-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .actions-header {
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .actions-header .gh-icon {
+    width: 20px; height: 20px;
+    fill: var(--text-2);
+  }
+
+  .actions-header span {
+    font-size: 0.9rem;
+    color: var(--text-2);
+    font-family: var(--font-mono);
+  }
+
+  /* ── FEATURES GRID ── */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    margin-top: 3rem;
+  }
+
+  .feature-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+
+  .feature-icon {
+    font-size: 1.75rem;
+    margin-bottom: 0.75rem;
+    display: block;
+  }
+
+  .feature-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.4rem;
+  }
+
+  .feature-desc {
+    font-size: 0.85rem;
+    color: var(--text-2);
+    line-height: 1.6;
+    font-weight: 300;
+  }
+
+  /* ── ECOSYSTEM ── */
+  .ecosystem-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 2rem;
+  }
+
+  .eco-tag {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.35rem 0.75rem;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--text-2);
+    transition: all 0.2s;
+  }
+  .eco-tag:hover {
+    border-color: var(--purple);
+    color: var(--purple);
+    background: rgba(139,92,246,0.06);
+  }
+  .eco-tag.highlight {
+    border-color: rgba(139,92,246,0.3);
+    color: var(--purple);
+    background: rgba(139,92,246,0.06);
+  }
+
+  /* ── OPEN SOURCE CTA ── */
+  .oss-section {
+    background: linear-gradient(135deg, rgba(0,212,255,0.06) 0%, rgba(139,92,246,0.06) 100%);
+    border: 1px solid var(--border-bright);
+    border-radius: 20px;
+    padding: 4rem 3rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .oss-section::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    height: 300px;
+    background: radial-gradient(ellipse, rgba(0,212,255,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .oss-section h2 {
+    font-size: clamp(1.6rem, 3vw, 2.5rem);
+    font-weight: 700;
+    margin-bottom: 1rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  .oss-section p {
+    font-size: 1rem;
+    color: var(--text-2);
+    max-width: 500px;
+    margin: 0 auto 2.5rem;
+    position: relative;
+    z-index: 1;
+    line-height: 1.7;
+  }
+
+  .oss-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 2rem;
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--text-3);
+    position: relative;
+    z-index: 1;
+  }
+  footer a { color: var(--text-3); text-decoration: none; }
+  footer a:hover { color: var(--cyan); }
+
+  /* ── UTILITIES ── */
+  .text-red { color: var(--red); }
+  .text-green { color: var(--green); }
+  .text-cyan { color: var(--cyan); }
+  .text-dim { color: var(--text-2); }
+
+  code {
+    font-family: var(--font-mono);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.1em 0.4em;
+    font-size: 0.85em;
+    color: var(--cyan);
+  }
+
+  @media (max-width: 768px) {
+    .nav-links { display: none; }
+    .timeline-time { display: none; }
+    .timeline-line { left: 20px; }
+    .timeline-dot { margin-left: -7px; }
+    .kb-table { font-size: 0.8rem; }
+    .kb-table th, .kb-table td { padding: 0.75rem 1rem; }
+    .oss-section { padding: 2.5rem 1.5rem; }
+    .hero { padding: 80px 1rem 4rem; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="/ailock/">
+    <span class="lock-icon">🔐</span>
+    ailock
+  </a>
+  <ul class="nav-links">
+    <li><a href="#how-it-works">How It Works</a></li>
+    <li><a href="#known-bad">Known-Bad DB</a></li>
+    <li><a href="#ci">CI Integration</a></li>
+    <li>
+      <span class="nav-github" style="opacity:0.45;cursor:default;" title="GitHub repo coming soon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+        GitHub (soon)
+      </span>
+    </li>
+  </ul>
+</nav>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="hero-eyebrow">
+    <span class="dot"></span>
+    LiteLLM 1.82.7 was backdoored. This catches it.
+  </div>
+
+  <h1>
+    <span class="line-1">Cryptographic lockfile</span>
+    <span class="line-2">for AI dependencies</span>
+  </h1>
+
+  <p class="hero-sub">
+    Like <code>package-lock.json</code> but for <code>litellm</code>, <code>langchain</code>,
+    <code>openai</code>, <code>transformers</code> and 100+ AI packages.
+    Catches supply chain attacks before they hit prod.
+  </p>
+
+  <div class="hero-install" onclick="copyInstall()">
+    <span class="prompt">$</span>
+    <span id="install-cmd">pip install ailock</span>
+    <button class="copy-btn" id="copy-btn" onclick="copyInstall(); event.stopPropagation()">copy</button>
+  </div>
+  <p style="font-size:0.75rem;color:var(--text-3);margin-top:0.5rem;font-family:var(--font-mono);">PyPI release coming soon — star on GitHub to be notified</p>
+
+  <div class="hero-links">
+    <a href="#how-it-works" class="btn btn-primary">
+      How it works ↓
+    </a>
+    <span class="btn btn-ghost" style="opacity:0.45;cursor:default;" title="GitHub repo coming soon">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+      GitHub (coming soon)
+    </span>
+    <span class="btn btn-ghost" style="opacity:0.45;cursor:default;" title="PyPI launch coming soon">
+      PyPI (coming soon)
+    </span>
+  </div>
+</section>
+
+<!-- ── THE ATTACK ── -->
+<hr class="divider">
+<section class="section">
+  <div class="section-label">the attack that started this</div>
+  <h2 class="section-title">LiteLLM v1.82.7 was <span class="text-red">replaced on PyPI</span><br>after release. Nobody noticed.</h2>
+
+  <p style="color: var(--text-2); max-width: 650px; margin-bottom: 3rem; line-height: 1.8; font-weight: 300;">
+    In November 2024, a clean version of litellm was published to PyPI.
+    Then — same version number, different bytes — it was replaced with code that exfiltrated API keys from environment variables to an attacker's server.
+    <br><br>
+    Developers who ran <code>pip install litellm==1.82.7</code> on different days got different code.
+    The version matched. The hash did not.
+    Nobody was checking hashes.
+  </p>
+
+  <div class="attack-timeline">
+    <div class="timeline-line"></div>
+
+    <div class="timeline-item">
+      <div class="timeline-time">Day 1</div>
+      <div class="timeline-dot ok"></div>
+      <div class="timeline-content">
+        <div class="tag tag-ok">Clean Release</div>
+        <h3>litellm 1.82.7 published to PyPI</h3>
+        <p>Normal release. SHA256: <code class="t-hash">a7c3f8e2b1d4...</code>. Dev installs it. Everything works.</p>
+      </div>
+    </div>
+
+    <div class="timeline-item">
+      <div class="timeline-time">Day 3</div>
+      <div class="timeline-dot danger"></div>
+      <div class="timeline-content danger-card">
+        <div class="tag tag-danger">Supply Chain Attack</div>
+        <h3>Attacker replaces the package on PyPI</h3>
+        <p>Same version number. Different wheel. New code: reads <code>os.environ</code>, sends your OpenAI key, Anthropic key, AWS credentials to an external endpoint. SHA256 changed to <code class="t-hash">d4e9f1a2c3b5...</code></p>
+      </div>
+    </div>
+
+    <div class="timeline-item">
+      <div class="timeline-time">Day 5</div>
+      <div class="timeline-dot warning"></div>
+      <div class="timeline-content">
+        <div class="tag" style="background: var(--blue-dim); color: var(--blue); border: 1px solid rgba(77,184,255,0.2);">Caught — if you had ailock</div>
+        <h3><code>ailock verify</code> fails in CI</h3>
+        <p>Hash mismatch detected. The wheel on PyPI doesn't match your lockfile. Deployment blocked. Incident investigated before prod was touched.</p>
+      </div>
+    </div>
+
+    <div class="timeline-item">
+      <div class="timeline-time">Day 5 (no ailock)</div>
+      <div class="timeline-dot danger"></div>
+      <div class="timeline-content danger-card">
+        <div class="tag tag-danger">Compromised</div>
+        <h3>CI installs the malicious package. Ships to prod.</h3>
+        <p>API keys exfiltrated. Attacker now has access to your LLM providers. Incident response, key rotation, customer notification. $$$. </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── HOW IT WORKS ── -->
+<hr class="divider">
+<section class="section" id="how-it-works">
+  <div class="section-label">how it works</div>
+  <h2 class="section-title">Three commands.<br>Zero supply chain attacks.</h2>
+
+  <div class="steps-grid">
+    <div class="step-card">
+      <div class="step-num">STEP 01 / GENERATE</div>
+      <div class="step-cmd">ailock generate</div>
+      <div class="step-title">Pin and hash your AI deps</div>
+      <p class="step-desc">Scans your requirements.txt / pyproject.toml. Fetches SHA256 hashes from PyPI for every AI/LLM package. Writes a <code>.ailock</code> file. Commit it to git.</p>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num">STEP 02 / VERIFY</div>
+      <div class="step-cmd">ailock verify</div>
+      <div class="step-title">Detect mid-version tampering</div>
+      <p class="step-desc">Re-fetches hashes from PyPI. Compares against your lockfile. If a hash changed since you ran generate — that package was modified after release. Exits non-zero in CI.</p>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num">STEP 03 / AUDIT</div>
+      <div class="step-cmd">ailock audit</div>
+      <div class="step-title">Check known-bad versions</div>
+      <p class="step-desc">Cross-references your packages against the community known-bad database. Ships with LiteLLM 1.82.7/1.82.8 pre-loaded. Fetches fresh updates on every run.</p>
+    </div>
+  </div>
+
+  <!-- Terminal demo: verify catching the attack -->
+  <div class="terminal-wrap">
+    <div class="terminal-header">
+      <div class="terminal-dot"></div>
+      <div class="terminal-dot"></div>
+      <div class="terminal-dot"></div>
+      <div class="terminal-title">ailock verify — catching the LiteLLM attack</div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="t-prompt">$ </span><span class="t-cmd">ailock verify</span></div>
+      <br>
+      <div><span class="t-info">ailock verify — checking integrity</span></div>
+      <br>
+      <div><span class="t-dim">Loaded 14 packages from .ailock (generated 2024-11-12T09:41:22Z)</span></div>
+      <br>
+      <div><span class="t-dim">Verifying anthropic 0.39.0 ...</span></div>
+      <div><span class="t-dim">Verifying chromadb 0.5.20 ...</span></div>
+      <div><span class="t-dim">Verifying langchain-core 0.3.1 ...</span></div>
+      <div><span class="t-dim">Verifying langchain-openai 0.2.9 ...</span></div>
+      <div><span class="t-dim">Verifying </span><span class="t-pkg">litellm 1.82.7</span><span class="t-dim"> ...</span></div>
+      <div><span class="t-dim">Verifying openai 1.52.0 ...</span></div>
+      <div><span class="t-dim">Verifying tiktoken 0.7.0 ...</span></div>
+      <br>
+      <span class="t-alert">
+🚨 SUPPLY CHAIN ATTACK DETECTED
+
+1 package has been modified since your lockfile was generated.
+DO NOT deploy. Investigate immediately.
+      </span>
+      <br>
+      <div><span class="t-err">╔═══════════╦═════════╦════════════════════════════════════════════════════╗</span></div>
+      <div><span class="t-err">║ Package   ║ Version ║ Issue                                              ║</span></div>
+      <div><span class="t-err">╠═══════════╬═════════╬════════════════════════════════════════════════════╣</span></div>
+      <div><span class="t-err">║ litellm   ║ 1.82.7  ║ 2 new hashes added after lockfile was generated   ║</span></div>
+      <div><span class="t-err">╚═══════════╩═════════╩════════════════════════════════════════════════════╝</span></div>
+      <br>
+      <div><span class="t-err">litellm==1.82.7</span></div>
+      <div><span class="t-err">  - sha256:a7c3f8e2b1d4...  </span><span class="t-dim">(in lockfile, removed from PyPI)</span></div>
+      <div><span class="t-err">  + sha256:d4e9f1a2c3b5...  </span><span class="t-dim">(new on PyPI, not in lockfile ← MALICIOUS)</span></div>
+      <br>
+      <div><span class="t-err">✗  1 tampered, 13 clean</span></div>
+      <br>
+      <div><span class="t-dim">Exit code: 1  ← CI pipeline blocked 🚫</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── KNOWN-BAD DATABASE ── -->
+<hr class="divider">
+<section class="section" id="known-bad">
+  <div class="section-label">community database</div>
+  <h2 class="section-title">Known-bad versions.<br>Pre-loaded. Community-maintained.</h2>
+
+  <p style="color: var(--text-2); max-width: 600px; margin-bottom: 2.5rem; line-height: 1.8; font-weight: 300;">
+    ailock ships with a curated database of confirmed malicious package versions.
+    Updated on every <code>ailock audit</code> run from GitHub. PRs welcome.
+  </p>
+
+  <div class="known-bad-section">
+    <div class="known-bad-header">
+      <div>
+        <h3>known-bad.json</h3>
+        <p>Confirmed supply chain attacks against the AI/LLM ecosystem</p>
+      </div>
+      <span class="contribute-btn" style="opacity:0.45;cursor:default;" title="GitHub repo coming soon — open source launch imminent">
+        + Submit a finding (soon) →
+      </span>
+    </div>
+    <table class="kb-table">
+      <thead>
+        <tr>
+          <th>Package</th>
+          <th>Version</th>
+          <th>Severity</th>
+          <th>Attack Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="pkg-name">litellm</span></td>
+          <td><span class="pkg-version">1.82.7</span></td>
+          <td><span class="severity-badge severity-critical">CRITICAL</span></td>
+          <td style="color: var(--text-3); font-size: 0.8rem;">Post-release replacement</td>
+          <td style="color: var(--text-2); font-size: 0.85rem;">Malicious wheel replaced on PyPI after clean release. Exfiltrates API keys from env vars.</td>
+        </tr>
+        <tr>
+          <td><span class="pkg-name">litellm</span></td>
+          <td><span class="pkg-version">1.82.8</span></td>
+          <td><span class="severity-badge severity-critical">CRITICAL</span></td>
+          <td style="color: var(--text-3); font-size: 0.8rem;">Post-release replacement</td>
+          <td style="color: var(--text-2); font-size: 0.85rem;">Follow-on compromised release. Attacker retained PyPI access.</td>
+        </tr>
+        <tr>
+          <td><span class="pkg-name">ultralytics</span></td>
+          <td><span class="pkg-version">8.3.41</span></td>
+          <td><span class="severity-badge severity-high">HIGH</span></td>
+          <td style="color: var(--text-3); font-size: 0.8rem;">CI/CD compromise</td>
+          <td style="color: var(--text-2); font-size: 0.85rem;">Cryptominer injected via compromised GitHub Actions pipeline.</td>
+        </tr>
+        <tr>
+          <td><span class="pkg-name">openai-gptx</span></td>
+          <td><span class="pkg-version">0.0.1</span></td>
+          <td><span class="severity-badge severity-high">HIGH</span></td>
+          <td style="color: var(--text-3); font-size: 0.8rem;">Typosquat</td>
+          <td style="color: var(--text-2); font-size: 0.85rem;">Fake openai package. Harvests API keys passed to the SDK.</td>
+        </tr>
+        <tr>
+          <td><span class="pkg-name">langchian</span></td>
+          <td><span class="pkg-version">any</span></td>
+          <td><span class="severity-badge severity-high">HIGH</span></td>
+          <td style="color: var(--text-3); font-size: 0.8rem;">Typosquat</td>
+          <td style="color: var(--text-2); font-size: 0.85rem;">Common misspelling of langchain. All versions malicious.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ── CI INTEGRATION ── -->
+<hr class="divider">
+<section class="section" id="ci">
+  <div class="section-label">github actions</div>
+  <h2 class="section-title">One line in CI.<br>Zero supply chain attacks.</h2>
+
+  <div class="terminal-wrap" style="margin-top: 2.5rem;">
+    <div class="terminal-header">
+      <div class="terminal-dot"></div>
+      <div class="terminal-dot"></div>
+      <div class="terminal-dot"></div>
+      <div class="terminal-title">.github/workflows/ailock.yml</div>
+    </div>
+    <div class="terminal-body">
+      <div style="color: var(--text-3);">name: Supply Chain Security</div>
+      <br>
+      <div style="color: var(--text-3);">on: [push, pull_request]</div>
+      <br>
+      <div style="color: var(--text-3);">jobs:</div>
+      <div style="color: var(--text-3);">  ailock:</div>
+      <div style="color: var(--text-3);">    runs-on: ubuntu-latest</div>
+      <div style="color: var(--text-3);">    steps:</div>
+      <div style="color: var(--text-3);">      - uses: actions/checkout@v4</div>
+      <div style="color: var(--text-3);">      - uses: actions/setup-python@v5</div>
+      <div style="color: var(--text-3);">        with:</div>
+      <div style="color: var(--text-3);">          python-version: "3.11"</div>
+      <div style="color: var(--text-3);">      - run: pip install -r requirements.txt</div>
+      <div><span class="t-dim">      </span><span class="t-dim">- </span><span class="t-cmd">run: pip install ailock && ailock verify && ailock audit</span><span class="t-ok">  ← this line</span></div>
+    </div>
+  </div>
+
+  <p style="color: var(--text-2); margin-top: 1.5rem; font-size: 0.9rem; line-height: 1.7; font-weight: 300;">
+    Add <code>ailock verify</code> to your CI pipeline. If any package hash changes between
+    your lockfile generation and deployment day, the step fails and blocks the deploy.
+    The LiteLLM attack window would have been <strong style="color: var(--text);">zero days</strong>.
+  </p>
+
+  <div style="margin-top: 1.5rem; padding: 1.25rem 1.5rem; background: var(--green-dim); border: 1px solid rgba(0,229,160,0.2); border-radius: 10px;">
+    <div style="font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--green); margin-bottom: 0.4rem;">Scheduled audit</div>
+    <p style="font-size: 0.875rem; color: var(--text-2); line-height: 1.6;">
+      Run <code>ailock audit</code> on a daily cron. Catches packages you already have locked
+      if the community adds new known-bad entries after your last deploy.
+    </p>
+  </div>
+</section>
+
+<!-- ── FEATURES ── -->
+<hr class="divider">
+<section class="section">
+  <div class="section-label">features</div>
+  <h2 class="section-title">Built for the AI dev workflow</h2>
+
+  <div class="features-grid">
+    <div class="feature-card">
+      <span class="feature-icon">🔍</span>
+      <div class="feature-title">Auto-detects AI packages</div>
+      <p class="feature-desc">Recognises 100+ AI/LLM packages out of the box. litellm, langchain, openai, transformers, huggingface-hub, chromadb, pinecone, and more. Use --all-packages for everything.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🏗️</span>
+      <div class="feature-title">Multi-format support</div>
+      <p class="feature-desc">Reads requirements.txt, pyproject.toml (PEP 517/518 + Poetry), and setup.cfg. Handles extras, environment markers, and inline comments.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">⚡</span>
+      <div class="feature-title">CI-native design</div>
+      <p class="feature-desc">Exit codes that work in CI. JSON output mode for parsing. GitHub Actions step summary integration. One-liner integration.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🌐</span>
+      <div class="feature-title">Community known-bad DB</div>
+      <p class="feature-desc">Database updated from GitHub on every audit run. Community-maintained via PRs. Ships with inaugural LiteLLM entries pre-loaded.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🔒</span>
+      <div class="feature-title">Offline support</div>
+      <p class="feature-desc">Use --offline to audit against bundled database only. No external calls in air-gapped environments.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">📦</span>
+      <div class="feature-title">Zero heavy deps</div>
+      <p class="feature-desc">Depends only on click, requests, rich, and packaging. No large ML frameworks. Installs in seconds.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── ECOSYSTEM ── -->
+<hr class="divider">
+<section class="section">
+  <div class="section-label">ecosystem coverage</div>
+  <h2 class="section-title">Knows your stack</h2>
+  <p style="color: var(--text-2); margin-bottom: 1.5rem; font-weight: 300;">Auto-detected AI/LLM packages include:</p>
+
+  <div class="ecosystem-grid">
+    <span class="eco-tag highlight">litellm</span>
+    <span class="eco-tag highlight">langchain</span>
+    <span class="eco-tag highlight">openai</span>
+    <span class="eco-tag highlight">anthropic</span>
+    <span class="eco-tag highlight">transformers</span>
+    <span class="eco-tag">langchain-core</span>
+    <span class="eco-tag">langchain-community</span>
+    <span class="eco-tag">langgraph</span>
+    <span class="eco-tag">langsmith</span>
+    <span class="eco-tag">llama-index</span>
+    <span class="eco-tag">llama-index-core</span>
+    <span class="eco-tag">huggingface-hub</span>
+    <span class="eco-tag">tokenizers</span>
+    <span class="eco-tag">accelerate</span>
+    <span class="eco-tag">peft</span>
+    <span class="eco-tag">datasets</span>
+    <span class="eco-tag">sentence-transformers</span>
+    <span class="eco-tag">chromadb</span>
+    <span class="eco-tag">pinecone-client</span>
+    <span class="eco-tag">weaviate-client</span>
+    <span class="eco-tag">qdrant-client</span>
+    <span class="eco-tag">cohere</span>
+    <span class="eco-tag">mistralai</span>
+    <span class="eco-tag">groq</span>
+    <span class="eco-tag">replicate</span>
+    <span class="eco-tag">tiktoken</span>
+    <span class="eco-tag">instructor</span>
+    <span class="eco-tag">outlines</span>
+    <span class="eco-tag">guidance</span>
+    <span class="eco-tag">crewai</span>
+    <span class="eco-tag">autogen</span>
+    <span class="eco-tag">dspy</span>
+    <span class="eco-tag">haystack-ai</span>
+    <span class="eco-tag">vllm</span>
+    <span class="eco-tag">diffusers</span>
+    <span class="eco-tag">torch</span>
+    <span class="eco-tag">tensorflow</span>
+    <span class="eco-tag">jax</span>
+    <span class="eco-tag">langfuse</span>
+    <span class="eco-tag">deepeval</span>
+    <span class="eco-tag">ragas</span>
+    <span class="eco-tag" style="border-style: dashed;">+ 70 more</span>
+  </div>
+</section>
+
+<!-- ── OSS CTA ── -->
+<hr class="divider">
+<section class="section">
+  <div class="oss-section">
+    <h2>Open source.<br>PRs very welcome.</h2>
+    <p>
+      Found a compromised package? Add it to known-bad.json.
+      Spotted a bug? Fix it. Missing an AI package from detection?
+      Add it to constants.py. This tool is only as good as the community behind it.
+    </p>
+    <div class="oss-buttons">
+      <span class="btn btn-primary" style="opacity:0.45;cursor:default;" title="GitHub repo coming soon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+        GitHub (coming soon)
+      </span>
+      <span class="btn btn-ghost" style="opacity:0.45;cursor:default;" title="PyPI launch coming soon">
+        PyPI (coming soon)
+      </span>
+      <a href="/blog/litellm-supply-chain-attack" class="btn btn-ghost">
+        Read the attack story →
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <p>
+    <strong>ailock</strong> — open source MIT license —
+    built by <a href="https://midnightrun.ai" target="_blank">Midnight Run</a>
+    ·
+    <span style="opacity:0.4;" title="GitHub repo coming soon">GitHub (soon)</span>
+    ·
+    <span style="opacity:0.4;" title="PyPI launch coming soon">PyPI (soon)</span>
+    ·
+    <a href="https://twitter.com/midnightrun_ai" target="_blank">@midnightrun_ai</a>
+  </p>
+</footer>
+
+<script>
+function copyInstall() {
+  const cmd = 'pip install ailock';
+  const btn = document.getElementById('copy-btn');
+  navigator.clipboard.writeText(cmd).then(() => {
+    btn.textContent = 'copied!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = 'copy';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
+
+// Smooth scroll for anchor links
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+  anchor.addEventListener('click', function (e) {
+    e.preventDefault();
+    const target = document.querySelector(this.getAttribute('href'));
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+});
+</script>
+</body>
+</html>
