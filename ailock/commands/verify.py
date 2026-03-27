@@ -155,6 +155,14 @@ def verify(lockfile, fail_on_missing, json_output):
     supply chain attack: the hash changed mid-version after the initial
     release.
 
+    IMPORTANT LIMITATION: verify compares your lockfile hashes against the
+    CURRENT state of PyPI. If an attack occurred and PyPI has since been
+    cleaned up (the malicious files replaced again with clean ones), verify
+    will show 'OK' — it cannot retroactively detect attacks that predate
+    your lockfile. For detecting known historically-compromised versions, use
+    'ailock audit' which checks against the known-bad database regardless of
+    current PyPI state.
+
     \b
     Examples:
         ailock verify
@@ -163,6 +171,10 @@ def verify(lockfile, fail_on_missing, json_output):
     """
     if not json_output:
         console.print("\n[bold cyan]ailock verify[/bold cyan] — checking integrity\n")
+        console.print(
+            "[dim]Note: verify detects changes since your lockfile was generated. "
+            "For historically-known attacks, also run [bold]ailock audit[/bold].[/dim]\n"
+        )
 
     # Load lockfile
     try:

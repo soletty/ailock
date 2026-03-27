@@ -23,7 +23,7 @@
         "https://www.reversinglabs.com/blog/litellm-supply-chain-attack"
       ],
       "remediation": "Upgrade to litellm >= 1.83.0 (verified clean). Rotate any API keys that may have been exposed. Check for unauthorized access in your LLM provider dashboards.",
-      "note": "Version-based detection: any lockfile containing litellm==1.82.7 will be flagged. Use 'ailock verify' to additionally detect hash changes in your specific environment."
+      "note": "Version-based detection active: any lockfile containing litellm==1.82.7 will be flagged. Specific malicious file hashes are not recorded here because the files were removed from PyPI after the attack was reported — hash-level detection is only possible via 'ailock verify' (lockfile vs. current PyPI state)."
     },
     {
       "package": "litellm",
@@ -45,7 +45,7 @@
         "https://www.reversinglabs.com/blog/litellm-supply-chain-attack"
       ],
       "remediation": "Upgrade to litellm >= 1.83.0 (verified clean). Rotate all API keys (OpenAI, Anthropic, Cohere, etc.). Audit deployment logs for exfiltration traffic.",
-      "note": "Version-based detection: any lockfile containing litellm==1.82.8 will be flagged. Use 'ailock verify' to additionally detect hash changes in your specific environment."
+      "note": "Version-based detection active: any lockfile containing litellm==1.82.8 will be flagged. Specific malicious file hashes are not recorded here because the files were removed from PyPI after the attack was reported — hash-level detection is only possible via 'ailock verify' (lockfile vs. current PyPI state)."
     },
     {
       "package": "ultralytics",
@@ -66,7 +66,7 @@
         "https://socket.dev/blog/ultralytics-supply-chain-attack"
       ],
       "remediation": "Upgrade to ultralytics >= 8.3.43 (patched). Check for cryptominer processes. Review any models or data processed with the affected version.",
-      "note": "Included as a real-world example of CI/CD compromise vs. direct PyPI tampering."
+      "note": "Version-based detection active: any lockfile containing ultralytics==8.3.41 will be flagged. Specific malicious file hashes are not recorded here because the files were removed/yanked from PyPI after the attack was reported — hash-level detection is only possible via 'ailock verify' (lockfile vs. current PyPI state). Included as a real-world example of CI/CD compromise vs. direct PyPI tampering."
     },
     {
       "package": "openai-gptx",

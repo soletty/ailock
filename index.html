@@ -6,14 +6,14 @@
 <title>ailock — Cryptographic Lockfile for AI/LLM Dependencies</title>
 <meta name="description" content="ailock — cryptographic lockfile for AI/LLM Python dependencies. Catches supply chain attacks on litellm, langchain, openai, transformers before they hit prod. Like package-lock.json, but for AI. Open source on GitHub.">
 <meta property="og:title" content="ailock — The Supply Chain Attack That Could Have Been Stopped">
-<meta property="og:description" content="LiteLLM v1.82.7 was replaced on PyPI after release. The hash changed. Nobody checked. ailock verify would have caught it. pip install ailock">
+<meta property="og:description" content="LiteLLM v1.82.7 was replaced on PyPI after release. The hash changed. Nobody checked. ailock verify would have caught it. Open source on GitHub.">
 <meta property="og:url" content="https://midnightrun.ai/ailock/">
 <meta property="og:image" content="https://midnightrun.ai/ailock/og-image.svg">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@midnightrun_ai">
 <meta name="twitter:title" content="ailock — Catch AI supply chain attacks in CI">
-<meta name="twitter:description" content="LiteLLM 1.82.7 was backdoored. ailock verify would have caught the hash change before it hit prod. Open source, pip install ailock.">
+<meta name="twitter:description" content="LiteLLM 1.82.7 was backdoored. ailock verify would have caught the hash change before it hit prod. Open source on GitHub.">
 <meta name="twitter:image" content="https://midnightrun.ai/ailock/og-image.svg">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔐</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -858,10 +858,10 @@
 
   <div class="hero-install" onclick="copyInstall()">
     <span class="prompt">$</span>
-    <span id="install-cmd">pip install ailock</span>
+    <span id="install-cmd">pip install git+https://github.com/soletty/ailock.git</span>
     <button class="copy-btn" id="copy-btn" onclick="copyInstall(); event.stopPropagation()">copy</button>
   </div>
-  <p style="font-size:0.75rem;color:var(--text-3);margin-top:0.5rem;font-family:var(--font-mono);">Open source on GitHub · PyPI release coming soon</p>
+  <p style="font-size:0.75rem;color:var(--text-3);margin-top:0.5rem;font-family:var(--font-mono);">Open source on GitHub · PyPI package coming soon (install from GitHub for now)</p>
 
   <div class="hero-links">
     <a href="#how-it-works" class="btn btn-primary">
@@ -1112,7 +1112,7 @@ DO NOT deploy. Investigate immediately.
       <div style="color: var(--text-3);">        with:</div>
       <div style="color: var(--text-3);">          python-version: "3.11"</div>
       <div style="color: var(--text-3);">      - run: pip install -r requirements.txt</div>
-      <div><span class="t-dim">      </span><span class="t-dim">- </span><span class="t-cmd">run: pip install ailock && ailock verify && ailock audit</span><span class="t-ok">  ← this line</span></div>
+      <div><span class="t-dim">      </span><span class="t-dim">- </span><span class="t-cmd">run: pip install git+https://github.com/soletty/ailock.git && ailock verify && ailock audit</span><span class="t-ok">  ← this line</span></div>
     </div>
   </div>
 
@@ -1265,7 +1265,7 @@ DO NOT deploy. Investigate immediately.
 
 <script>
 function copyInstall() {
-  const cmd = 'pip install ailock';
+  const cmd = 'pip install git+https://github.com/soletty/ailock.git';
   const btn = document.getElementById('copy-btn');
   navigator.clipboard.writeText(cmd).then(() => {
     btn.textContent = 'copied!';

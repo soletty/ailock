@@ -152,6 +152,59 @@ def parse_pyproject_toml(content: str, source_file: str = "") -> List[ParsedPack
     return packages
 
 
+def parse_setup_py(content: str, source_file: str = "") -> List[ParsedPackage]:
+    """Parse setup.py install_requires using AST (no execution)."""
+    import ast
+
+    packages = []
+
+    try:
+        tree = ast.parse(content)
+    except SyntaxError:
+        return packages
+
+    # Walk the AST looking for setup(...) or setuptools.setup(...) calls
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+
+        # Match setup(...) or setuptools.setup(...)
+        func = node.func
+        is_setup_call = (
+            (isinstance(func, ast.Name) and func.id == "setup")
+            or (
+                isinstance(func, ast.Attribute)
+                and func.attr == "setup"
+            )
+        )
+        if not is_setup_call:
+            continue
+
+        # Find install_requires keyword argument
+        for kw in node.keywords:
+            if kw.arg != "install_requires":
+                continue
+
+            # Should be a list literal
+            if not isinstance(kw.value, (ast.List, ast.Tuple)):
+                continue
+
+            for elt in kw.value.elts:
+                # Each element should be a string constant
+                if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
+                    dep_str = elt.value.strip()
+                elif isinstance(elt, ast.Str):  # Python 3.7 compat
+                    dep_str = elt.s.strip()
+                else:
+                    continue
+
+                if dep_str:
+                    pkgs = parse_requirements_txt(dep_str, source_file)
+                    packages.extend(pkgs)
+
+    return packages
+
+
 def parse_setup_cfg(content: str, source_file: str = "") -> List[ParsedPackage]:
     """Parse setup.cfg install_requires."""
     packages = []
@@ -199,6 +252,8 @@ def parse_source_file(path: Path) -> List[ParsedPackage]:
         return parse_pyproject_toml(content, source)
     elif name == "setup.cfg":
         return parse_setup_cfg(content, source)
+    elif name == "setup.py":
+        return parse_setup_py(content, source)
     else:
         return parse_requirements_txt(content, source)
 
