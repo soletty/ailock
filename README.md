@@ -4,8 +4,9 @@
 > Like `package-lock.json`, but for `litellm`, `langchain`, `openai`, `transformers`, and friends.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Security](https://img.shields.io/badge/security-supply%20chain-red)](https://midnightrun.ai/ailock)
+[![Security](https://img.shields.io/badge/security-supply%20chain-red)](https://midnightrun.ai/ailock/)
 ![PyPI](https://img.shields.io/badge/PyPI-coming%20soon-lightgrey)
+[![GitHub stars](https://img.shields.io/github/stars/soletty/ailock?style=social)](https://github.com/soletty/ailock)
 
 ---
 
