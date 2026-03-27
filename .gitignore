@@ -16,3 +16,4 @@ htmlcov/
 *.ailock
 *.log
 .DS_Store
+.github/workflows/
