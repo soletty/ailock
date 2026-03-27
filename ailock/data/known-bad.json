@@ -1,6 +1,6 @@
 {
   "schema_version": "1",
-  "description": "Community-maintained database of known-bad AI/LLM Python package versions. Submit PRs at https://github.com/midnightrun-ai/ailock",
+  "description": "Community-maintained database of known-bad AI/LLM Python package versions. Submit PRs at https://github.com/soletty/ailock",
   "last_updated": "2025-03-27",
   "entries": [
     {

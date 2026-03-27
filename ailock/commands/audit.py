@@ -229,7 +229,7 @@ def audit(lockfile, offline, db_url, json_output, show_db):
         if not json_output:
             console.print(
                 "[yellow]⚠[/yellow]  Known-bad database is empty. "
-                "Consider contributing at github.com/midnightrun-ai/ailock\n"
+                "Consider contributing at github.com/soletty/ailock\n"
             )
         return
 

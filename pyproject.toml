@@ -52,10 +52,10 @@ dev = [
 ailock = "ailock.cli:main"
 
 [project.urls]
-Homepage = "https://midnightrun.ai/ailock"
-Repository = "https://github.com/midnightrun-ai/ailock"
-Issues = "https://github.com/midnightrun-ai/ailock/issues"
-"Known-Bad DB" = "https://github.com/midnightrun-ai/ailock/blob/main/ailock/data/known-bad.json"
+Homepage = "https://midnightrun.ai/ailock/"
+Repository = "https://github.com/soletty/ailock"
+Issues = "https://github.com/soletty/ailock/issues"
+"Known-Bad DB" = "https://github.com/soletty/ailock/blob/main/ailock/data/known-bad.json"
 
 [tool.setuptools.packages.find]
 where = ["."]

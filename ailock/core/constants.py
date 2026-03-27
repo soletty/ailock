@@ -8,7 +8,7 @@ PYPI_API_BASE = "https://pypi.org/pypi"
 
 # Community known-bad database (raw GitHub)
 KNOWN_BAD_DB_URL = (
-    "https://raw.githubusercontent.com/midnightrun-ai/ailock/main/"
+    "https://raw.githubusercontent.com/soletty/ailock/main/"
     "ailock/data/known-bad.json"
 )
 
